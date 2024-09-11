@@ -1,0 +1,29 @@
+name: Update Manifest
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  update-manifest:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Update manifest
+        run: python manifest.py
+      - name: Commit and push changes
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          git add manifest.json
+          git commit -m 'Update manifest file after merge to main'
+          git push
+        env:
+          # Provide a GitHub token to allow pushing changes
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

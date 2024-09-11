@@ -1,0 +1,35 @@
+"""Hello World!
+
+This is a simple example module that demonstrates how to use GRAPEVNE modules. This module displays an image on the screen in a platform-independent way. The module touches an output file that we call a 'trigger' to signify that the module has completed successfully. The name of the trigger file is configurable.
+
+Params:
+    Triggers:
+        Done (str): The name of the trigger file that will be touched when the module completes successfully.
+"""
+configfile: "config/config.yaml"
+from grapevne_helper import init, resource, output, param
+
+init(workflow)
+
+
+rule all:
+    input:
+        imgfile = resource("Hello.png")
+    output:
+        outfile = output(param("Triggers", "Done"))
+    run:
+        import sys
+        import subprocess
+        from pathlib import Path
+
+        imageViewerFromCommandLine = {
+            'linux':'xdg-open',
+            'win32':'explorer',
+            'darwin':'open'
+        }[sys.platform]
+        subprocess.run([imageViewerFromCommandLine, input.imgfile])
+        Path(output.outfile).touch()
+
+rule _test:
+    input:
+        outfile = output(param("Triggers", "Done"))

@@ -1,0 +1,5 @@
+input_namespace: null
+output_namespace: out
+params:
+  Triggers:
+    Done: "touch"

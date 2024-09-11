@@ -1,0 +1,56 @@
+name: Test on pull request
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-12]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Miniconda
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          miniforge-version: latest
+          auto-update-conda: true
+          python-version: 3.11
+
+      - name: Install Snakemake
+        shell: bash -l {0}
+        run: |
+          source $CONDA/bin/activate
+          # https://github.com/snakemake/snakemake/issues/2480
+          conda install -y -n base -c bioconda -c conda-forge snakemake=7.32.4 python=3.11
+
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+        if: false
+
+      - name: Run tests
+        shell: bash -l {0}
+        run: |
+          # Install mamba for snakemake
+          source $CONDA/bin/activate
+          conda install -y -n base -c conda-forge mamba
+
+          # Set conda sub-directory
+          if [ "$RUNNER_OS" == "macOS" ] && [ "$RUNNER_ARCH" == "ARM64" ]; then
+            conda config --env --set subdir osx-64
+          fi
+        
+          # Determine main and branch hashes (to identify altered/new files)
+          git fetch origin main
+          TRUNK_HASH=$(git rev-parse origin/main)
+          BRANCH_HASH=${{ github.sha }}
+
+          # Run tests
+          python tests/pull_tests.py $TRUNK_HASH $BRANCH_HASH
