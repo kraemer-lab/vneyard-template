@@ -7,9 +7,10 @@ Params:
         Done (str): The name of the trigger file that will be touched when the module completes successfully.
 """
 configfile: "config/config.yaml"
-from grapevne_helper import init, resource, output, param
+from grapevne_helper import import_grapevne
 
-init(workflow)
+grapevne = import_grapevne(workflow)
+globals().update(vars(grapevne))
 
 
 rule all:
