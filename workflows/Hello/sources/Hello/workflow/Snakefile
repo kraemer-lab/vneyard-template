@@ -7,18 +7,32 @@ Params:
         Done (str): The name of the trigger file that will be touched when the module completes successfully.
 """
 configfile: "config/config.yaml"
-from grapevne_helper import import_grapevne
+from grapevne_helper import import_grapevne  # Import the bundled GRAPEVNE helper
 
-grapevne = import_grapevne(workflow)
-globals().update(vars(grapevne))
+grapevne = import_grapevne(workflow)  # Use the helper to import GRAPEVNE
+                                      # You can specify version requirements here, e.g.
+                                      #  import_grapevne(workflow, version="0.2")
+
+globals().update(vars(grapevne))      # For convenience, we expose all variables from
+                                      # the GRAPEVNE module
 
 
+# This is a single rule module that displays an image on the screen
 rule all:
     input:
-        imgfile = resource("Hello.png")
+        # The only input here is a resource (payload) file that is an image
+        imgfile = resource("Hello.png"),
     output:
-        outfile = output(param("Triggers", "Done"))
+        temp(  # Output is temporary
+            touch(  # Touch (create an empty file) to signify job completion
+                output(  # Point to the output file path
+                    # Name of the trigger file, user specified in the parameters
+                    params("Triggers", "Done")
+                )
+            )
+        )
     run:
+        # This is a platform-independent way to display an image
         import sys
         import subprocess
         from pathlib import Path
@@ -29,8 +43,11 @@ rule all:
             'darwin':'open'
         }[sys.platform]
         subprocess.run([imageViewerFromCommandLine, input.imgfile])
-        Path(output.outfile).touch()
 
+# See `.test.sh` for test execution.
+# `_test` rules are automatically excluded from GRAPEVNE workflows.
 rule _test:
     input:
-        outfile = output(param("Triggers", "Done"))
+        # This rule will only succeed if the output of the `all` rule is present,
+        # indicating rule completion
+        outfile = output(params("Triggers", "Done"))
